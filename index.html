@@ -14,22 +14,37 @@ h1{font-size:15px;color:#f8fafc}
 .container{position:relative;width:1313px;max-width:100%;border:2px solid #334155;border-radius:12px;overflow:hidden;box-shadow:0 12px 36px rgba(0,0,0,.55)}
 canvas{display:block;width:100%;height:auto;cursor:pointer;background:#444}
 .prompt{display:none;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fbbf24;border:1px solid #fbbf24;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:bold;white-space:nowrap}
+.prompt{pointer-events:auto;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;max-width:96%;white-space:normal}
+.prompt .pn{margin-right:4px}
+.prompt button{background:#f59e0b;color:#000;border:0;border-radius:5px;padding:4px 8px;font-size:12px;font-weight:bold;cursor:pointer}
+.prompt button:hover{background:#fbbf24}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;align-items:center;justify-content:center;padding:16px}
 .modal-box{background:#1e293b;border:1px solid #334155;width:380px;max-width:100%;border-radius:12px;padding:22px;position:relative}
 .close-btn{position:absolute;top:10px;right:10px;background:#334155;color:#fff;border:none;width:26px;height:26px;border-radius:50%;cursor:pointer;font-weight:bold}
 .modal-title{font-size:17px;font-weight:bold;color:#fbbf24;margin-bottom:4px;padding-right:30px}
 .modal-sub{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
 .modal-desc{font-size:13px;color:#cbd5e1;background:#0f172a;padding:12px;border-radius:8px;margin-bottom:16px;line-height:1.45}
+.modal-box{width:480px}
+.tabs{display:flex;gap:4px;margin:10px 0 12px;flex-wrap:wrap}
+.tab{background:#0f172a;color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:5px 9px;font-size:12px;cursor:pointer}
+.tab b{color:#fbbf24;margin-right:4px}.tab.on{background:#f59e0b;color:#000;border-color:#f59e0b}.tab.on b{color:#000}
+.modal-desc ul{margin-left:18px}.modal-desc li{margin:4px 0}.modal-desc .k{color:#94a3b8;display:inline-block;width:80px}
+.note{font-size:11px;color:#64748b;margin-top:10px}
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gal figure{position:relative;border-radius:8px;overflow:hidden;background:#1e293b;aspect-ratio:4/3}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+.gal .del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border:0;border-radius:50%;width:22px;height:22px;cursor:pointer}
+.up{display:inline-block;margin-top:10px;background:#334155;color:#fff;padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer}
 .modal-btn{width:100%;background:#f59e0b;color:#000;font-weight:bold;padding:10px;border:none;border-radius:6px;cursor:pointer}
 </style>
 </head>
 <body>
 <header>
   <h1>🏢 Oficina Virtual - Mapa Interactivo</h1>
-  <div class="hint">Controles: <span>W A S D</span> / <span>Flechas</span> / <span>Clic</span> · <span>E</span> para interactuar</div>
+  <div class="hint">Controles: <span>W A S D</span> / <span>Flechas</span> / <span>Clic</span> · <span>E</span> info · <span>I</span> equipo · <span>P</span> proyectos · <span>C</span> contacto · <span>G</span> galería</div>
 </header>
 <div class="container">
-  <canvas id="c" width="1313" height="732"></canvas>
+  <canvas id="c" width="1313" height="732" tabindex="0" style="outline:none"></canvas>
   <div id="prompt" class="prompt"></div>
 </div>
 <div id="modal" class="modal">
@@ -37,8 +52,9 @@ canvas{display:block;width:100%;height:auto;cursor:pointer;background:#444}
     <button id="closeBtn" class="close-btn">✕</button>
     <div id="mt" class="modal-title"></div>
     <div id="ms" class="modal-sub"></div>
+    <div id="tabs" class="tabs"></div>
     <div id="md" class="modal-desc"></div>
-    <button id="actionBtn" class="modal-btn">Aceptar</button>
+    <button id="actionBtn" class="modal-btn">Cerrar (Esc)</button>
   </div>
 </div>
 <script>
@@ -261,10 +277,12 @@ function buildBackground(){
 buildBackground();
 
 /* ---------- Jugador ---------- */
-const player={x:600,y:418,speed:4,name:'Opti',tx:null,ty:null,t:0,moving:false};
+const player={x:600,y:418,speed:4,name:'ERICKA',tx:null,ty:null,t:0,moving:false};
 const keys={};let activeArea=null;
 
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=true;if(k==='e')checkTrigger();if(k.startsWith('arrow'))e.preventDefault();});
+addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();keys[k]=true;if(!e.repeat)handleKey(k);if(k.startsWith('arrow')||k===' ')e.preventDefault();},true);
+addEventListener('pointerdown',()=>window.focus());addEventListener('load',()=>{window.focus();canvas.focus();});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 
 function drawPlayer(){
@@ -297,6 +315,7 @@ function drawPlayer(){
 
 function update(){
   let dx=0,dy=0;
+  if(modalEl.style.display==='flex'){player.moving=false;return;}
   if(keys['arrowup']||keys['w'])dy-=1;
   if(keys['arrowdown']||keys['s'])dy+=1;
   if(keys['arrowleft']||keys['a'])dx-=1;
@@ -312,25 +331,100 @@ function update(){
   // área activa: la más pequeña que contiene al jugador
   const cands=areas.filter(a=>player.x>=a.x&&player.x<=a.x+a.w&&player.y>=a.y&&player.y<=a.y+a.h);
   activeArea=cands.sort((p,q)=>p.w*p.h-q.w*q.h)[0]||null;
-  if(activeArea){promptEl.textContent='Presiona E o haz clic para ver '+activeArea.name;promptEl.style.display='block';}
-  else promptEl.style.display='none';
+  if(activeArea){
+    if(promptEl._a!==activeArea){promptEl._a=activeArea;
+      promptEl.innerHTML='<span class="pn">'+activeArea.name+'</span>'+TABS.map(t=>'<button data-k="'+t[0]+'">'+t[0].toUpperCase()+' '+t[1]+'</button>').join('');
+      promptEl.querySelectorAll('button').forEach(bt=>bt.onclick=()=>openModal(bt.dataset.k));}
+    promptEl.style.display='flex';
+  } else {promptEl._a=null;promptEl.style.display='none';}
 }
-function checkTrigger(){
-  if(!activeArea)return;
-  document.getElementById('mt').textContent=activeArea.name;
-  document.getElementById('ms').textContent=activeArea.sub;
-  document.getElementById('md').textContent=activeArea.desc;
-  modalEl.style.display='flex';
+const EXTRA=[
+ {t:['Laura Gómez — Barista líder','Andrés Rojas — Servicios generales'],p:['Renovación de la máquina de café','Menú saludable semanal','Campaña de reciclaje'],ext:'100',hor:'7:00 – 17:00'},
+ {t:['Marta Pineda — Auditora senior','Julián Vargas — Auditor','Sofía Díaz — Analista'],p:['Plan anual de auditoría 2026','Revisión de controles internos','Seguimiento a hallazgos'],ext:'210',hor:'8:00 – 17:30'},
+ {t:['Camilo Herrera — Jefe de inventarios','Paula Ortiz — Coordinadora logística','Esteban Ruiz — Analista de stock'],p:['Conteo cíclico trimestral','Optimización de bodega','Integración con SAP MM'],ext:'230',hor:'7:30 – 17:00'},
+ {t:['Diana Suárez — Asistente operativa','Mateo León — Auxiliar'],p:['Digitalización de archivo','Apoyo a cierre contable'],ext:'235',hor:'8:00 – 17:00'},
+ {t:['Ricardo Mora — Líder de TI','Valentina Cruz — Soporte N2','Óscar Peña — Soporte N1'],p:['Renovación de equipos','Mesa de ayuda 24/7','Política de contraseñas'],ext:'300',hor:'7:00 – 18:00'},
+ {t:['Natalia Bernal — Líder SAP','Felipe Castro — Consultor funcional','Ana Torres — Key user'],p:['Migración a S/4HANA','Nuevos reportes financieros','Capacitación a usuarios'],ext:'310',hor:'8:00 – 17:30'},
+ {t:['Carolina Ríos — Jefe legal','Sebastián Ávila — Abogado corporativo'],p:['Actualización de estatutos','Actas de junta directiva','Registro mercantil'],ext:'320',hor:'8:00 – 17:00'},
+ {t:['Iván Salcedo — Infraestructura','Karen Molina — Redes','Daniel Quiroz — Seguridad'],p:['Segmentación de red','Respaldo en la nube','Auditoría de seguridad'],ext:'301',hor:'24/7'},
+ {t:['Mónica Vélez — Líder BI','Tomás Arias — Analista de datos','Julia Mejía — Visualización'],p:['Tablero de ventas','Modelo predictivo de demanda','Data warehouse'],ext:'330',hor:'8:00 – 17:30'},
+ {t:['Gustavo Páez — Jefe de compras','Lina Cárdenas — Compradora','Hugo Beltrán — Gestor de proveedores'],p:['Licitación anual','Evaluación de proveedores','Acuerdos marco'],ext:'340',hor:'8:00 – 17:00'},
+ {t:['Elena Duarte — Oficial de compliance','Pablo Nieto — Analista de procesos'],p:['Mapa de procesos','Certificación ISO 9001','Código de ética'],ext:'350',hor:'8:00 – 17:00'},
+ {t:['Equipo TAC — Coordinación de eventos'],p:['Reuniones al aire libre','Jornada de integración','Mantenimiento de jardines'],ext:'360',hor:'Según agenda'},
+ {t:['Capacidad: 4 personas'],p:['Reuniones de equipo','Videollamadas cortas'],ext:'—',hor:'Reserva en recepción'},
+ {t:['Capacidad: 4 personas'],p:['Reuniones de equipo','Entrevistas'],ext:'—',hor:'Reserva en recepción'},
+ {t:['Recepción — Camila Flórez','Seguridad — Turno rotativo'],p:['Control de visitantes','Entrega de carnés'],ext:'100',hor:'7:00 – 18:00'},
+ {t:['Capacidad: 8 personas'],p:['Juntas directivas','Presentaciones a clientes'],ext:'—',hor:'Reserva en recepción'},
+ {t:['Adriana Pardo — Gerente de talento','Jorge Salazar — Selección','María Castaño — Nómina'],p:['Plan de bienestar','Proceso de selección Q4','Evaluación de desempeño'],ext:'400',hor:'8:00 – 17:00'}
+];
+areas.forEach((a,i)=>Object.assign(a,EXTRA[i]));
+const TABS=[['e','Info'],['i','Equipo'],['p','Proyectos'],['c','Contacto'],['g','Galería']];
+let curArea=null,curTab='e';
+const mdEl=document.getElementById('md'),tabsEl=document.getElementById('tabs');
+const slug=a=>a.name+'|'+a.sub;
+function loadGal(a){try{return JSON.parse(localStorage.getItem('gal:'+slug(a))||'[]');}catch(e){return [];}}
+function saveGal(a,arr){try{localStorage.setItem('gal:'+slug(a),JSON.stringify(arr));return true;}catch(e){alert('No hay espacio para guardar más imágenes en este navegador.');return false;}}
+function ph(a,n){
+  const c=['#2a587c','#3f8a45','#d9631f'][n%3];
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+c+'"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs><rect width="400" height="300" fill="url(#g)"/><text x="200" y="145" font-family="Arial" font-size="22" font-weight="bold" fill="#fff" text-anchor="middle">'+a.name.replace(/&/g,'y')+'</text><text x="200" y="175" font-family="Arial" font-size="14" fill="#cbd5e1" text-anchor="middle">Imagen ilustrativa '+(n+1)+'</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
-canvas.addEventListener('click',e=>{
+function renderModal(){
+  const a=curArea;
+  document.getElementById('mt').textContent=a.name;
+  document.getElementById('ms').textContent=a.sub;
+  tabsEl.innerHTML=TABS.map(t=>'<button class="tab'+(t[0]===curTab?' on':'')+'" data-k="'+t[0]+'"><b>'+t[0].toUpperCase()+'</b>'+t[1]+'</button>').join('');
+  tabsEl.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{curTab=btn.dataset.k;renderModal();});
+  let h='';
+  if(curTab==='e')h='<p>'+a.desc+'</p><p class="note">Datos de ejemplo: reemplázalos por la información real de cada área.</p>';
+  else if(curTab==='i')h='<ul>'+a.t.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  else if(curTab==='p')h='<ul>'+a.p.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  else if(curTab==='c')h='<p><span class="k">Extensión</span>'+a.ext+'</p><p><span class="k">Horario</span>'+a.hor+'</p><p><span class="k">Correo</span>'+a.name.toLowerCase().replace(/[^a-z]+/g,'.').replace(/^\.|\.$/g,'')+'@empresa.com</p>';
+  else{
+    const own=loadGal(a);
+    h='<div class="gal">'+[0,1].map(n=>'<figure><img src="'+ph(a,n)+'" alt=""></figure>').join('')+own.map((d,i)=>'<figure><img src="'+d+'" alt=""><button class="del" data-i="'+i+'" title="Eliminar">✕</button></figure>').join('')+'</div><label class="up">📷 Agregar imágenes<input id="file" type="file" accept="image/*" multiple hidden></label><p class="note">Las imágenes que agregues se guardan solo en este navegador.</p>';
+  }
+  mdEl.innerHTML=h;
+  if(curTab==='g'){
+    document.getElementById('file').onchange=ev=>addImages(ev.target.files);
+    mdEl.querySelectorAll('.del').forEach(btn=>btn.onclick=()=>{const arr=loadGal(a);arr.splice(+btn.dataset.i,1);saveGal(a,arr);renderModal();});
+  }
+}
+function addImages(files){
+  const a=curArea;
+  [...files].forEach(f=>{
+    const r=new FileReader();
+    r.onload=()=>{const im=new Image();im.onload=()=>{
+      const sc=Math.min(1,640/Math.max(im.width,im.height));
+      const c=document.createElement('canvas');c.width=im.width*sc;c.height=im.height*sc;
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      const arr=loadGal(a);arr.push(c.toDataURL('image/jpeg',.72));
+      if(saveGal(a,arr)&&curArea===a)renderModal();
+    };im.src=r.result;};
+    r.readAsDataURL(f);
+  });
+}
+function openModal(k){
+  if(!curArea)curArea=activeArea;
+  if(!curArea)return;
+  curTab=k;modalEl.style.display='flex';renderModal();
+}
+function closeModal(){modalEl.style.display='none';curArea=null;}
+function checkTrigger(){openModal('e');}
+function handleKey(k){
+  const open=modalEl.style.display==='flex';
+  if(k==='escape'){if(open)closeModal();return;}
+  if(TABS.some(t=>t[0]===k)&&(open||activeArea))openModal(k);
+}
+canvas.addEventListener('click',e=>{canvas.focus();
   const r=canvas.getBoundingClientRect();
   const x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
   // clic sobre el área donde ya estás -> abre información
   if(activeArea&&x>=activeArea.x&&x<=activeArea.x+activeArea.w&&y>=activeArea.y&&y<=activeArea.y+activeArea.h&&Math.hypot(x-player.x,y-player.y)<60){checkTrigger();return;}
   player.tx=x;player.ty=y;
 });
-document.getElementById('closeBtn').onclick=()=>modalEl.style.display='none';
-document.getElementById('actionBtn').onclick=()=>modalEl.style.display='none';
+document.getElementById('closeBtn').onclick=closeModal;
+document.getElementById('actionBtn').onclick=closeModal;
 
 function loop(){update();ctx.drawImage(bg,0,0);drawPlayer();requestAnimationFrame(loop);}
 loop();
