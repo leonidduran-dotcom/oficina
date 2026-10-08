@@ -14,7 +14,7 @@ h1{font-size:15px;color:#f8fafc}
 .container{position:relative;width:1313px;max-width:100%;border:2px solid #334155;border-radius:12px;overflow:hidden;box-shadow:0 12px 36px rgba(0,0,0,.55)}
 canvas{display:block;width:100%;height:auto;cursor:pointer;background:#444}
 .prompt{display:none;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,.95);color:#fbbf24;border:1px solid #fbbf24;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:bold;white-space:nowrap}
-.prompt{pointer-events:auto;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;max-width:96%;white-space:normal}
+.prompt{pointer-events:auto;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-start;left:14px;transform:none;max-width:58%;white-space:normal}
 .prompt .pn{margin-right:4px}
 .prompt button{background:#f59e0b;color:#000;border:0;border-radius:5px;padding:4px 8px;font-size:12px;font-weight:bold;cursor:pointer}
 .prompt button:hover{background:#fbbf24}
@@ -25,6 +25,8 @@ canvas{display:block;width:100%;height:auto;cursor:pointer;background:#444}
 .modal-sub{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
 .modal-desc{font-size:13px;color:#cbd5e1;background:#0f172a;padding:12px;border-radius:8px;margin-bottom:16px;line-height:1.45}
 .modal-box{width:480px}
+.floors{display:none}
+.floors button{background:#0f172a;color:#cbd5e1;border:1px solid #334155;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:bold;cursor:pointer;margin-right:4px}.floors .on{background:#f59e0b;color:#000;border-color:#f59e0b}
 .tabs{display:flex;gap:4px;margin:10px 0 12px;flex-wrap:wrap}
 .tab{background:#0f172a;color:#94a3b8;border:1px solid #334155;border-radius:6px;padding:5px 9px;font-size:12px;cursor:pointer}
 .tab b{color:#fbbf24;margin-right:4px}.tab.on{background:#f59e0b;color:#000;border-color:#f59e0b}.tab.on b{color:#000}
@@ -41,6 +43,7 @@ canvas{display:block;width:100%;height:auto;cursor:pointer;background:#444}
 <body>
 <header>
   <h1>🏢 Oficina Virtual - Mapa Interactivo</h1>
+  <div class="floors"><button data-f="0" class="on">Piso 1</button><button data-f="1">Piso 2</button></div>
   <div class="hint">Controles: <span>W A S D</span> / <span>Flechas</span> / <span>Clic</span> · <span>E</span> info · <span>I</span> equipo · <span>P</span> proyectos · <span>C</span> contacto · <span>G</span> galería</div>
 </header>
 <div class="container">
@@ -63,7 +66,7 @@ const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
 const promptEl=document.getElementById('prompt'),modalEl=document.getElementById('modal');
 const BLUE='#2a587c',GRAY='#6b8688',ORANGE='#f6b04f',GREEN='#b0c52b',DGREEN='#3f8a45',BROWN='#4a3208';
 
-const areas=[
+const areas1=[
  {name:'Cafetería',sub:'Área de Descanso',x:80,y:447,w:113,h:148,desc:'Espacio de coffee break para recargar energías.'},
  {name:'AUDITORÍA INTERNA',sub:'Módulo Operativo',x:193,y:447,w:194,h:146,desc:'Control de procesos e informes de auditoría.'},
  {name:'GESTIÓN DE INVENTARIOS',sub:'Área de Trabajo',x:387,y:447,w:506,h:144,desc:'Monitoreo, control de stock y logística interna.'},
@@ -84,8 +87,8 @@ const areas=[
 ];
 
 /* ---------- Capa estática (se dibuja una sola vez) ---------- */
-const bg=document.createElement('canvas');bg.width=W;bg.height=H;
-const b=bg.getContext('2d');
+let bg=document.createElement('canvas');bg.width=W;bg.height=H;
+let b=bg.getContext('2d');
 
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 let _seed=7;function rnd(){_seed=(_seed*16807)%2147483647;return _seed/2147483647;}
@@ -150,7 +153,7 @@ function text(t,x,y,size,rot=true,col='#fff'){
   b.fillStyle=col;b.fillText(t,0,0);b.restore();
 }
 
-function buildBackground(){
+function drawBase(){
   // Fondo exterior
   b.fillStyle='#454545';b.fillRect(0,0,W,H);
   const vg=b.createRadialGradient(W/2,H/2,200,W/2,H/2,800);
@@ -175,6 +178,9 @@ function buildBackground(){
   b.fillStyle='rgba(255,255,255,.10)';b.fillRect(137,392,1071,3);
   for(let i=0;i<2200;i++){b.fillStyle=rnd()>.5?'rgba(255,255,255,.05)':'rgba(120,60,0,.06)';b.fillRect(137+rnd()*1071,390+rnd()*57,1.2,1.2);}
 
+}
+function buildBackground(){
+  drawBase();
   // Zonas
   zone(80,447,113,148,BROWN,.03);
   zone(193,447,194,146,BLUE);
@@ -275,6 +281,168 @@ function buildBackground(){
   text('SALA C. 1',982,609,10,false);
 }
 buildBackground();
+const bg1=bg;
+const areas2=[
+ {name:'ARCHIVO',sub:'Gestión Documental',x:80,y:447,w:113,h:148,desc:'Custodia y consulta del archivo físico y digital.'},
+ {name:'JURÍDICO',sub:'Asuntos Legales',x:193,y:447,w:194,h:146,desc:'Contratos, conceptos legales y litigios.'},
+ {name:'SALA DE CAPACITACIÓN',sub:'Formación',x:387,y:447,w:254,h:144,desc:'Espacio para inducciones, talleres y capacitaciones.'},
+ {name:'SERVICIO AL CLIENTE',sub:'Atención',x:641,y:447,w:252,h:144,desc:'Atención de solicitudes, quejas y reclamos.'},
+ {name:'DIRECCIÓN COMERCIAL',sub:'Ventas',x:893,y:447,w:129,h:106,desc:'Dirección de la estrategia y metas comerciales.'},
+ {name:'SALA J.1',sub:'Reuniones',x:1058,y:447,w:39,h:106,desc:'Sala de juntas J.1.'},
+ {name:'SALA J.2',sub:'Reuniones',x:1097,y:447,w:39,h:106,desc:'Sala de juntas J.2.'},
+ {name:'HALL / ASCENSORES',sub:'Circulación',x:1136,y:447,w:72,h:106,desc:'Acceso a ascensores y escaleras.'},
+ {name:'FINANZAS',sub:'Planeación Financiera',x:200,y:155,w:130,h:235,desc:'Presupuesto, flujo de caja y análisis financiero.'},
+ {name:'CONTABILIDAD',sub:'Registro Contable',x:330,y:155,w:123,h:235,desc:'Estados financieros, impuestos y cierre contable.'},
+ {name:'TESORERÍA',sub:'Pagos y Recaudos',x:453,y:155,w:61,h:235,desc:'Gestión de bancos, pagos y recaudos.'},
+ {name:'COMERCIAL',sub:'Fuerza de Ventas',x:514,y:10,w:256,h:380,desc:'Equipo de ventas y gestión de cuentas clave.'},
+ {name:'MARKETING',sub:'Mercadeo',x:772,y:10,w:61,h:380,desc:'Marca, campañas y comunicación digital.'},
+ {name:'GERENCIA GENERAL',sub:'Alta Dirección',x:835,y:10,w:127,h:380,desc:'Oficinas de la gerencia y comité ejecutivo.'},
+ {name:'PMO',sub:'Gestión de Proyectos',x:962,y:10,w:64,h:380,desc:'Seguimiento de portafolio y proyectos estratégicos.'},
+ {name:'TERRAZA',sub:'Zona Exterior',x:1026,y:10,w:287,h:380,desc:'Terraza para descansos, almuerzos y reuniones informales.'},
+ {name:'BIENESTAR',sub:'Gimnasio y Descanso',x:893,y:553,w:240,h:179,desc:'Zona de pausas activas, yoga y descanso.'}
+];
+const EXTRA2=[
+ {t:['Rosa Medina — Archivista','Iván Pérez — Auxiliar'],p:['Digitalización de expedientes','Tablas de retención'],ext:'410',hor:'8:00 – 17:00'},
+ {t:['Gabriela Lozano — Directora jurídica','Martín Silva — Abogado','Clara Ibáñez — Paralegal'],p:['Revisión de contratos marco','Gestión de litigios','Política de datos personales'],ext:'420',hor:'8:00 – 17:00'},
+ {t:['Equipo de Talento — Instructores'],p:['Inducción corporativa','Curso de seguridad','Talleres de liderazgo'],ext:'430',hor:'Según agenda'},
+ {t:['Nelson Cortés — Líder de servicio','Yesica Rincón — Agente','Brayan Ocampo — Agente'],p:['Nuevo sistema de tickets','Encuesta de satisfacción','Reducción de tiempos de respuesta'],ext:'440',hor:'7:00 – 19:00'},
+ {t:['Alejandro Fonseca — Director comercial','Marcela Ortega — Asistente'],p:['Metas de ventas Q4','Plan de expansión regional'],ext:'450',hor:'8:00 – 18:00'},
+ {t:['Capacidad: 6 personas'],p:['Reuniones comerciales','Comités'],ext:'—',hor:'Reserva en recepción'},
+ {t:['Capacidad: 6 personas'],p:['Reuniones de proyecto','Entrevistas'],ext:'—',hor:'Reserva en recepción'},
+ {t:['Recepción piso 2 — Turno rotativo'],p:['Orientación a visitantes'],ext:'102',hor:'7:00 – 18:00'},
+ {t:['Héctor Barrera — Director financiero','Isabel Montoya — Analista','Cristian Gil — Analista'],p:['Presupuesto 2027','Modelo de flujo de caja','Control de costos'],ext:'460',hor:'8:00 – 17:30'},
+ {t:['Patricia Naranjo — Contadora general','Luis Ferrer — Contador','Daniela Acosta — Auxiliar'],p:['Cierre contable mensual','Conciliaciones bancarias','Declaración de renta'],ext:'470',hor:'8:00 – 17:30'},
+ {t:['Oscar Prieto — Tesorero','Viviana Sáenz — Analista'],p:['Programación de pagos','Gestión de cupos bancarios'],ext:'480',hor:'8:00 – 17:00'},
+ {t:['Fabián Roldán — Gerente comercial','Tatiana Quintero — Ejecutiva','Jairo Pinzón — Ejecutivo'],p:['Cuentas clave','Propuestas comerciales','Pipeline trimestral'],ext:'490',hor:'8:00 – 18:00'},
+ {t:['Silvia Mendoza — Jefe de marca','Rafael Cano — Community manager','Juana Vera — Diseñadora'],p:['Rediseño de la marca','Campaña de fin de año','Calendario de contenidos'],ext:'495',hor:'8:00 – 17:30'},
+ {t:['Eduardo Larrea — Gerente general','Beatriz Montes — Asistente ejecutiva'],p:['Plan estratégico 2027','Comité ejecutivo mensual'],ext:'500',hor:'8:00 – 18:00'},
+ {t:['Lorena Giraldo — Líder PMO','Andrés Camargo — Project manager'],p:['Portafolio de proyectos','Tablero de avance','Gestión de riesgos'],ext:'510',hor:'8:00 – 17:30'},
+ {t:['Zona de uso libre'],p:['Almuerzos al aire libre','Eventos de integración'],ext:'—',hor:'7:00 – 18:00'},
+ {t:['Instructor de pausas activas — Lun, Mié, Vie'],p:['Pausas activas','Clases de yoga','Programa de salud'],ext:'520',hor:'7:00 – 18:00'}
+];
+areas2.forEach((a,i)=>Object.assign(a,EXTRA2[i]));
+const WOOD='#6b4a35';
+
+function execDesk(x,y){
+  b.fillStyle='rgba(0,0,0,.35)';rr(b,x+3,y+4,58,26,3);b.fill();
+  const g=b.createLinearGradient(x,y,x,y+26);g.addColorStop(0,'#8a6038');g.addColorStop(1,'#573a22');
+  b.fillStyle=g;rr(b,x,y,58,26,3);b.fill();
+  b.strokeStyle='rgba(0,0,0,.4)';b.stroke();
+  b.fillStyle='#2a2f3a';rr(b,x+22,y+3,14,4,1);b.fill();b.fillStyle='#6fb6e0';b.fillRect(x+23.5,y+3.8,11,2);
+  b.fillStyle='#d5d7e2';rr(b,x+22,y+13,14,6,1);b.fill();
+  const cg=b.createRadialGradient(x+27,y+36,1,x+29,y+38,10);cg.addColorStop(0,'#9c7a5c');cg.addColorStop(1,'#5c4331');
+  b.fillStyle=cg;b.beginPath();b.ellipse(x+29,y+38,10,8,0,0,7);b.fill();
+}
+function umbrella(x,y,r){
+  b.fillStyle='rgba(0,0,0,.28)';b.beginPath();b.arc(x+4,y+6,r,0,7);b.fill();
+  b.fillStyle='rgba(245,245,240,.92)';b.beginPath();b.arc(x,y,r,0,7);b.fill();
+  b.strokeStyle='rgba(150,150,140,.7)';b.lineWidth=1;
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;b.beginPath();b.moveTo(x,y);b.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r);b.stroke();}
+  b.fillStyle='#b8b8ae';b.beginPath();b.arc(x,y,3,0,7);b.fill();
+}
+function lounger(x,y){
+  b.fillStyle='rgba(0,0,0,.3)';rr(b,x+2,y+3,20,46,4);b.fill();
+  b.fillStyle='#f4f1e8';rr(b,x,y,20,46,4);b.fill();b.strokeStyle='#cfc9b8';b.stroke();
+  b.fillStyle='#e3dccb';rr(b,x+2,y+2,16,12,3);b.fill();
+}
+
+function build2(){
+  drawBase();
+  // terraza: deck de madera
+  const deck=(x,y,w,h)=>{
+    for(let yy=y;yy<y+h;yy+=14){
+      const v=Math.floor(rnd()*22);
+      const g=b.createLinearGradient(x,yy,x,yy+14);
+      g.addColorStop(0,'rgb('+(150+v)+','+(112+v)+','+(76+v)+')');g.addColorStop(1,'rgb('+(132+v)+','+(96+v)+','+(62+v)+')');
+      b.fillStyle=g;b.fillRect(x,yy,w,Math.min(14,y+h-yy));
+      b.fillStyle='rgba(40,22,8,.45)';b.fillRect(x,yy,w,1);
+      for(let k=0;k<3;k++){const jx=x+rnd()*w;b.fillStyle='rgba(40,22,8,.35)';b.fillRect(jx,yy,1,14);}
+    }
+  };
+  deck(1026,10,287,380);deck(1208,390,105,163);
+  b.fillStyle='rgba(0,0,0,.18)';b.fillRect(1026,10,4,380);
+  // zonas interiores
+  const Z=[[80,447,113,148,BROWN],[193,447,194,146,BLUE],[387,447,254,144,GRAY],[641,447,252,144,GRAY],[893,447,129,106,BLUE],
+   [200,155,130,235,BLUE],[330,155,123,235,GRAY],[453,155,61,235,BLUE],[514,155,124,235,GRAY],[638,10,132,380,GRAY],
+   [772,10,61,380,BLUE],[835,10,127,380,WOOD],[962,10,64,380,GRAY],[893,553,240,179,DGREEN]];
+  Z.forEach(z=>{zone(z[0],z[1],z[2],z[3],z[4],.03);});
+  b.strokeStyle='rgba(0,0,0,.35)';b.lineWidth=1;Z.forEach(z=>b.strokeRect(z[0]+.5,z[1]+.5,z[2],z[3]));
+  b.save();b.globalCompositeOperation='multiply';
+  Z.forEach(z=>{const sg=b.createLinearGradient(0,z[1],0,z[1]+10);sg.addColorStop(0,'rgba(0,0,0,.28)');sg.addColorStop(1,'rgba(0,0,0,0)');b.fillStyle=sg;b.fillRect(z[0],z[1],z[2],10);});
+  b.restore();
+  divider(330,172,385);divider(455,172,385);divider(512,172,385);divider(646,30,385);divider(960,30,385);
+
+  // escritorios
+  [192,250,308].forEach(y=>{[225,275,352,408,486,526,620].forEach(x=>desk(x,y,13,54));});
+  [77,134,192,250,308].forEach(y=>{[657,741].forEach(x=>desk(x,y,14,54));desk(789,y+2,14,54);desk(1004,y+7,14,54);});
+  [510].forEach(y=>[222,272,322].forEach(x=>desk(x,y,14,54)));
+  [490,540].forEach(y=>[665,712,759,806,853].forEach(x=>desk(x,y,14,48)));
+  workstation(902,455);workstation(968,455);workstation(902,500);workstation(968,500);
+  [60,150,240].forEach(y=>execDesk(886,y));
+  roundTable(898,335,14);
+  // archivo: estanterías
+  [462,490,518,546].forEach(y=>{
+    b.fillStyle='rgba(0,0,0,.35)';b.fillRect(94,y+3,90,12);
+    b.fillStyle='#2d1f0a';b.fillRect(92,y,90,12);
+    for(let x=94;x<180;x+=8){b.fillStyle=['#8a6a3a','#a88650','#6b4f27','#c0a06a'][Math.floor(rnd()*4)];b.fillRect(x,y+2,6,8);}
+  });
+  // capacitación: mesas
+  [480,515,550].forEach(y=>[412,525].forEach(x=>{
+    b.fillStyle='rgba(0,0,0,.3)';rr(b,x+3,y+4,100,20,2);b.fill();
+    const g=b.createLinearGradient(x,y,x,y+20);g.addColorStop(0,'#c9a06a');g.addColorStop(1,'#a07a48');
+    b.fillStyle=g;rr(b,x,y,100,20,2);b.fill();b.strokeStyle='rgba(60,35,10,.5)';b.stroke();
+  }));
+  // plantas
+  [270,306,342,398,434,470,656,692,728,782,818,854].forEach(x=>plant(x,432));
+  // terraza: mobiliario
+  [[1100,110],[1215,110],[1100,260],[1215,260]].forEach(p=>{roundTable(p[0],p[1],11);umbrella(p[0],p[1],34);});
+  [1060,1090,1120].forEach(x=>lounger(x,330));
+  plant(1040,24);plant(1040,350);plant(1262,24);plant(1262,350);plant(1262,200);
+  // salas de juntas
+  [1058,1098].forEach((x,i)=>{
+    b.fillStyle='#f6a21a';b.fillRect(x,447,38,106);
+    b.strokeStyle='#4a3208';b.lineWidth=2;b.strokeRect(x+1,448,36,104);
+    roundTable(x+19,525,10);
+    text('SALA J.',x+19,478,9,false);text(String(i+1),x+19,490,9,false);
+  });
+  // ascensores
+  const eg=b.createLinearGradient(1160,0,1186,0);eg.addColorStop(0,'#9aa3af');eg.addColorStop(.5,'#e5e7eb');eg.addColorStop(1,'#9aa3af');
+  b.fillStyle=eg;b.fillRect(1160,518,28,36);b.strokeStyle='#4b5563';b.lineWidth=1;b.strokeRect(1160.5,518.5,27,35);
+  b.fillStyle='rgba(0,0,0,.4)';b.fillRect(1174,519,1,34);
+  // escalera
+  b.strokeStyle='rgba(255,255,255,.6)';b.lineWidth=1;b.strokeRect(1131,352,45,38);
+  for(let i=0;i<8;i++){b.beginPath();b.moveTo(1134+i*3,386-i*3.5);b.lineTo(1174,392-i*3.5);b.stroke();}
+  // bienestar
+  ['#7c6fd1','#e86a8a','#3aa6b9'].forEach((c,i)=>{const x=912+i*32;b.fillStyle='rgba(0,0,0,.3)';rr(b,x+2,579,22,58,5);b.fill();b.fillStyle=c;rr(b,x,576,22,58,5);b.fill();b.fillStyle='rgba(255,255,255,.25)';b.fillRect(x+3,579,2,52);});
+  [1030,1066].forEach(x=>{b.fillStyle='rgba(0,0,0,.3)';rr(b,x+2,579,28,56,4);b.fill();b.fillStyle='#374151';rr(b,x,576,28,56,4);b.fill();b.fillStyle='#6b7280';b.fillRect(x+5,584,18,36);b.fillStyle='#9ca3af';b.fillRect(x+4,578,20,4);});
+  // iluminación
+  const lg=b.createRadialGradient(660,330,60,660,330,720);
+  lg.addColorStop(0,'rgba(255,248,225,.10)');lg.addColorStop(1,'rgba(0,0,20,.22)');
+  b.fillStyle=lg;b.fillRect(80,10,946,722);
+  // rótulos
+  text('FINANZAS',265,285,17);text('CONTABILIDAD',391,285,16);text('TESORERÍA',483,285,13);
+  text('COMERCIAL',575,285,18);text('MARKETING',803,215,16);text('GERENCIA GENERAL',852,200,16);
+  text('PMO',994,150,17);text('TERRAZA',1250,235,52);
+  text('JURÍDICO',290,470,16,false);text('SALA DE CAPACITACIÓN',514,466,15,false);
+  text('SERVICIO AL CLIENTE',767,468,15,false);text('ARCHIVO',136,582,13,false);
+  text('DIRECCIÓN',958,540,10,false);
+  text('BIENESTAR',1013,672,17,false);text('Gimnasio y descanso',1013,692,10,false);
+  text('HALL',1197,500,13);
+}
+bg=document.createElement('canvas');bg.width=W;bg.height=H;b=bg.getContext('2d');
+build2();
+const bg2=bg;
+let areas=areas1,curFloor=0,fade=0;
+const FLOORS=[{areas:areas1,bg:bg1},{areas:areas2,bg:bg2}];
+bg=bg1;
+const LINKS=[]; // piso 2 desactivado por ahora
+const inLink=()=>LINKS.some(l=>player.x>=l.x&&player.x<=l.x+l.w&&player.y>=l.y&&player.y<=l.y+l.h);
+function setFloor(n){
+  if(n===curFloor)return;
+  if(modalEl.style.display==='flex')closeModal();
+  curFloor=n;areas=FLOORS[n].areas;bg=FLOORS[n].bg;fade=1;activeArea=null;promptEl._k=null;
+  document.querySelectorAll('.floors button').forEach(bt=>bt.classList.toggle('on',+bt.dataset.f===n));
+}
 
 /* ---------- Jugador ---------- */
 const player={x:600,y:418,speed:4,name:'FILL',tx:null,ty:null,t:0,moving:false};
@@ -331,12 +499,17 @@ function update(){
   // área activa: la más pequeña que contiene al jugador
   const cands=areas.filter(a=>player.x>=a.x&&player.x<=a.x+a.w&&player.y>=a.y&&player.y<=a.y+a.h);
   activeArea=cands.sort((p,q)=>p.w*p.h-q.w*q.h)[0]||null;
-  if(activeArea){
-    if(promptEl._a!==activeArea){promptEl._a=activeArea;
-      promptEl.innerHTML='<span class="pn">'+activeArea.name+'</span>'+TABS.map(t=>'<button data-k="'+t[0]+'">'+t[0].toUpperCase()+' '+t[1]+'</button>').join('');
-      promptEl.querySelectorAll('button').forEach(bt=>bt.onclick=()=>openModal(bt.dataset.k));}
-    promptEl.style.display='flex';
-  } else {promptEl._a=null;promptEl.style.display='none';}
+  const lk=inLink();
+  const key=(activeArea?activeArea.name:'')+'|'+lk+'|'+curFloor;
+  if(promptEl._k!==key){promptEl._k=key;
+    let h='';
+    if(activeArea)h+='<span class="pn">'+activeArea.name+'</span>'+TABS.map(t=>'<button data-k="'+t[0]+'">'+t[0].toUpperCase()+' '+t[1]+'</button>').join('');
+    if(lk)h+='<button data-f="1">F '+(curFloor===0?'⬆ Subir al piso 2':'⬇ Bajar al piso 1')+'</button>';
+    promptEl.innerHTML=h;
+    promptEl.querySelectorAll('button[data-k]').forEach(bt=>bt.onclick=()=>openModal(bt.dataset.k));
+    promptEl.querySelectorAll('button[data-f]').forEach(bt=>bt.onclick=()=>setFloor(1-curFloor));
+  }
+  promptEl.style.display=(activeArea||lk)?'flex':'none';
 }
 const EXTRA=[
  {t:['Laura Gómez — Barista líder','Andrés Rojas — Servicios generales'],p:['Renovación de la máquina de café','Menú saludable semanal','Campaña de reciclaje'],ext:'100',hor:'7:00 – 17:00'},
@@ -357,7 +530,7 @@ const EXTRA=[
  {t:['Capacidad: 8 personas'],p:['Juntas directivas','Presentaciones a clientes'],ext:'—',hor:'Reserva en recepción'},
  {t:['Adriana Pardo — Gerente de talento','Jorge Salazar — Selección','María Castaño — Nómina'],p:['Plan de bienestar','Proceso de selección Q4','Evaluación de desempeño'],ext:'400',hor:'8:00 – 17:00'}
 ];
-areas.forEach((a,i)=>Object.assign(a,EXTRA[i]));
+areas1.forEach((a,i)=>Object.assign(a,EXTRA[i]));
 const TABS=[['e','Info'],['i','Equipo'],['p','Proyectos'],['c','Contacto'],['g','Galería']];
 let curArea=null,curTab='e';
 const mdEl=document.getElementById('md'),tabsEl=document.getElementById('tabs');
@@ -414,6 +587,7 @@ function checkTrigger(){openModal('e');}
 function handleKey(k){
   const open=modalEl.style.display==='flex';
   if(k==='escape'){if(open)closeModal();return;}
+  if(k==='f'&&!open&&inLink()){setFloor(1-curFloor);return;}
   if(TABS.some(t=>t[0]===k)&&(open||activeArea))openModal(k);
 }
 canvas.addEventListener('click',e=>{canvas.focus();
@@ -426,7 +600,11 @@ canvas.addEventListener('click',e=>{canvas.focus();
 document.getElementById('closeBtn').onclick=closeModal;
 document.getElementById('actionBtn').onclick=closeModal;
 
-function loop(){update();ctx.drawImage(bg,0,0);drawPlayer();requestAnimationFrame(loop);}
+document.querySelectorAll('.floors button').forEach(bt=>bt.onclick=()=>{setFloor(+bt.dataset.f);canvas.focus();});
+function loop(){update();ctx.drawImage(bg,0,0);drawPlayer();
+  ctx.fillStyle='rgba(15,23,42,.9)';rr(ctx,20,18,120,32,8);ctx.fill();ctx.strokeStyle='#f6b04f';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='bold 15px "Segoe UI",Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('PISO '+(curFloor+1),80,34);
+  if(fade>0){ctx.fillStyle='rgba(0,0,0,'+fade+')';ctx.fillRect(0,0,W,H);fade=Math.max(0,fade-.07);}requestAnimationFrame(loop);}
 loop();
 </script>
 </body>
