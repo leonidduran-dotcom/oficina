@@ -277,7 +277,7 @@ function buildBackground(){
 buildBackground();
 
 /* ---------- Jugador ---------- */
-const player={x:600,y:418,speed:4,name:'ERICKA',tx:null,ty:null,t:0,moving:false};
+const player={x:600,y:418,speed:4,name:'FILL',tx:null,ty:null,t:0,moving:false};
 const keys={};let activeArea=null;
 
 addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();keys[k]=true;if(!e.repeat)handleKey(k);if(k.startsWith('arrow')||k===' ')e.preventDefault();},true);
