@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oficina Virtual Interactiva 2D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background-color: #2b2d2f;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+
+        .kbd-key {
+            box-shadow: 0 2px 0 0 #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans h-screen flex flex-col justify-between overflow-hidden select-none">
+
+    <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700 px-4 py-2 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/30">
+                <i class="fa-solid fa-building-user text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm leading-none text-white">Oficina Virtual Interactiva</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Explora las áreas con las flechas, WASD o clic directo</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="soundToggle" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-medium flex items-center gap-2 transition border border-slate-600">
+                <i class="fa-solid fa-volume-high text-orange-400" id="soundIcon"></i>
+                <span id="soundText">Audio: ON</span>
+            </button>
+            <button id="btnHelp" class="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-xs font-semibold flex items-center gap-2 transition shadow-md shadow-orange-600/30">
+                <i class="fa-solid fa-circle-question"></i>
+                <span>Instrucciones</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="relative flex-1 flex items-center justify-center p-2 bg-[#1e2022] overflow-hidden">
+        <div class="relative w-full h-full max-w-6xl flex items-center justify-center">
+            
+            <canvas id="gameCanvas" class="rounded-xl shadow-2xl border border-slate-700/60 max-w-full max-h-full object-contain cursor-pointer"></canvas>
+
+            <div id="interactionPrompt" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md border border-orange-500/60 px-5 py-2.5 rounded-full text-xs font-medium text-orange-200 flex items-center gap-3 shadow-2xl animate-bounce z-10">
+                <span class="px-2 py-0.5 bg-orange-600 text-white font-bold rounded shadow text-[10px] uppercase">Presiona E</span>
+                <span id="promptText">Interactuar</span>
+            </div>
+
+            <div id="touchControls" class="absolute bottom-4 left-4 grid grid-cols-3 gap-1 md:hidden opacity-80 z-10">
+                <div></div>
+                <button id="btnUp" class="w-10 h-10 bg-slate-800/90 text-white rounded-lg border border-slate-700 flex items-center justify-center">▲</button>
+                <div></div>
+                <button id="btnLeft" class="w-10 h-10 bg-slate-800/90 text-white rounded-lg border border-slate-700 flex items-center justify-center">◀</button>
+                <button id="btnAction" class="w-10 h-10 bg-orange-600 text-white font-bold rounded-lg border border-orange-400 flex items-center justify-center text-xs">E</button>
+                <button id="btnRight" class="w-10 h-10 bg-slate-800/90 text-white rounded-lg border border-slate-700 flex items-center justify-center">▶</button>
+                <div></div>
+                <button id="btnDown" class="w-10 h-10 bg-slate-800/90 text-white rounded-lg border border-slate-700 flex items-center justify-center">▼</button>
+                <div></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-800/90 backdrop-blur border-t border-slate-700 px-4 py-2 shrink-0 z-20">
+        <div class="max-w-6xl mx-auto flex items-center justify-between text-xs">
+            <span class="text-slate-400 hidden sm:inline"><i class="fa-solid fa-compass mr-1 text-orange-400"></i> Ir a:</span>
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                <button onclick="teleportTo('cafe')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition shrink-0">☕ Cafetería</button>
+                <button onclick="teleportTo('compras')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition shrink-0">🛒 Compras</button>
+                <button onclick="teleportTo('compliance')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition shrink-0">📋 Procesos</button>
+                <button onclick="teleportTo('jardin')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition shrink-0">🌱 Zona Verde</button>
+                <button onclick="teleportTo('reunion')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition shrink-0">🟧 Reuniones</button>
+                <button onclick="teleportTo('lounge')" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition shrink-0">🟩 Lounge Inferior</button>
+            </div>
+        </div>
+    </footer>
+
+    <div id="modalOverlay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+            <div class="px-5 py-3 border-b border-slate-700 flex items-center justify-between bg-slate-800/80">
+                <div class="flex items-center gap-2">
+                    <span id="modalIcon" class="text-base text-orange-400"></span>
+                    <h3 id="modalTitle" class="font-bold text-sm text-white">Información</h3>
+                </div>
+                <button id="modalCloseBtn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="modalBody" class="p-5 text-xs text-slate-300 space-y-3 max-h-[60vh] overflow-y-auto"></div>
+
+            <div class="px-5 py-2.5 border-t border-slate-700 bg-slate-900/40 flex justify-end">
+                <button id="modalActionBtn" class="px-4 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-xs font-semibold transition">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl p-5 space-y-4">
+            <h3 class="font-bold text-base text-white flex items-center gap-2">
+                <i class="fa-solid fa-gamepad text-orange-400"></i> Cómo explorar la oficina
+            </h3>
+            
+            <div class="space-y-2 text-xs text-slate-300">
+                <div class="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-700/50">
+                    <span>Mover Avatar</span>
+                    <div class="flex gap-1">
+                        <span class="px-1.5 py-0.5 bg-slate-700 rounded font-mono">WASD</span>
+                        <span class="text-slate-500">/</span>
+                        <span class="px-1.5 py-0.5 bg-slate-700 rounded font-mono">Flechas</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-700/50">
+                    <span>Mover con Clic</span>
+                    <span>Haz clic en cualquier pasillo o zona</span>
+                </div>
+                <div class="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-700/50">
+                    <span>Interactuar</span>
+                    <span class="px-2 py-0.5 bg-orange-600 text-white font-bold rounded font-mono">Tecla E</span>
+                </div>
+            </div>
+
+            <button onclick="document.getElementById('helpModal').classList.add('hidden')" class="w-full py-2 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-lg text-xs transition">
+                ¡Entendido!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const CANVAS_WIDTH = 1000;
+        const CANVAS_HEIGHT = 520;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        let soundEnabled = true;
+        const synth = new Tone.Synth().toDestination();
+        synth.volume.value = -14;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (Tone.context.state !== 'running') Tone.start();
+                if (type === 'step') synth.triggerAttackRelease("C2", "32n", undefined, 0.08);
+                else if (type === 'interact') synth.triggerAttackRelease("A4", "16n");
+                else if (type === 'teleport') synth.triggerAttackRelease("E5", "8n");
+            } catch (e) {}
+        }
+
+        const zones = [
+            // Top Section
+            { id: 'wood_desks', name: 'Área de Trabajo Principal', x: 150, y: 120, w: 85, h: 160, color: '#d99e52', type: 'wood' },
+            { id: 'bay_top_1', name: 'Módulo de Trabajo 1', x: 235, y: 120, w: 90, h: 160, color: '#1e425e', label: '' },
+            { id: 'bay_top_2', name: 'Módulo de Trabajo 2', x: 325, y: 120, w: 85, h: 160, color: '#4a6b6c', label: '' },
+            { id: 'bay_top_3', name: 'Módulo de Trabajo 3', x: 410, y: 120, w: 85, h: 160, color: '#1e425e', label: '' },
+            { id: 'compras', name: 'Departamento de Compras', x: 495, y: 40, w: 85, h: 240, color: '#1e425e', label: 'COMPRAS', vText: true },
+            { id: 'compliance', name: 'Procesos y Compliance', x: 580, y: 40, w: 85, h: 240, color: '#4a6b6c', label: 'PROCESOS Y COMPLIANCE', vText: true },
+            { id: 'jardin', name: 'Zona Verde Exterior', x: 665, y: 40, w: 250, h: 360, color: '#a3d92b', label: 'ZONA VERDE' },
+
+            // Corridor
+            { id: 'corridor', name: 'Pasillo Central', x: 105, y: 280, w: 710, h: 45, color: '#f5a642', isCorridor: true },
+
+            // Bottom Section
+            { id: 'cafe', name: 'Cafetería & Breakroom', x: 65, y: 325, w: 85, h: 100, color: '#3d2612', icon: '☕' },
+            { id: 'bay_bot_1', name: 'Módulo Inferior 1', x: 150, y: 325, w: 85, h: 100, color: '#1e425e' },
+            { id: 'bay_bot_2', name: 'Módulo Inferior 2', x: 235, y: 325, w: 90, h: 100, color: '#4a6b6c' },
+            { id: 'bay_bot_3', name: 'Módulo Inferior 3', x: 325, y: 325, w: 85, h: 100, color: '#1e425e' },
+            { id: 'bay_bot_4', name: 'Módulo Inferior 4', x: 410, y: 325, w: 85, h: 100, color: '#4a6b6c' },
+            { id: 'bay_bot_5', name: 'Módulo Inferior 5', x: 495, y: 325, w: 85, h: 100, color: '#1e425e' },
+            { id: 'bay_bot_6', name: 'Módulo Inferior 6', x: 580, y: 325, w: 85, h: 100, color: '#4a6b6c' },
+            { id: 'recepcion', name: 'Recepción', x: 665, y: 325, w: 70, h: 80, color: '#1e425e' },
+            { id: 'reunion', name: 'Salas de Reuniones', x: 735, y: 325, w: 80, h: 80, color: '#f59e0b', label: 'REUNIONES' },
+
+            // Lower Right Sections
+            { id: 'lounge_green_1', name: 'Lounge / Sala Verde 1', x: 665, y: 410, w: 70, h: 90, color: '#27683c' },
+            { id: 'lounge_green_2', name: 'Lounge / Sala Verde 2', x: 735, y: 410, w: 80, h: 90, color: '#1d5c31' }
+        ];
+
+        const corridorPlants = [
+            { x: 250, y: 270 }, { x: 280, y: 270 }, { x: 310, y: 270 },
+            { x: 340, y: 270 }, { x: 370, y: 270 }, { x: 400, y: 270 },
+            { x: 510, y: 270 }, { x: 540, y: 270 }, { x: 570, y: 270 },
+            { x: 600, y: 270 }, { x: 630, y: 270 }
+        ];
+
+        const player = {
+            x: 450,
+            y: 300,
+            radius: 10,
+            speed: 3.2,
+            targetX: null,
+            targetY: null,
+            isMoving: false,
+            animTimer: 0
+        };
+
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k in keys) keys[k] = true;
+            if (e.key in keys) keys[e.key] = true;
+            if (k === 'e') triggerInteraction();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k in keys) keys[k] = false;
+            if (e.key in keys) keys[e.key] = false;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            player.targetX = (e.clientX - rect.left) * scaleX;
+            player.targetY = (e.clientY - rect.top) * scaleY;
+        });
+
+        function isPointInWalkableArea(x, y) {
+            // Check inside floor layout zones
+            for (let z of zones) {
+                if (x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function updatePlayer() {
+            let dx = 0;
+            let dy = 0;
+
+            if (keys.w || keys.ArrowUp) dy -= 1;
+            if (keys.s || keys.ArrowDown) dy += 1;
+            if (keys.a || keys.ArrowLeft) dx -= 1;
+            if (keys.d || keys.ArrowRight) dx += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                player.targetX = null;
+                player.targetY = null;
+            } else if (player.targetX !== null && player.targetY !== null) {
+                const diffX = player.targetX - player.x;
+                const diffY = player.targetY - player.y;
+                const dist = Math.hypot(diffX, diffY);
+
+                if (dist > 4) {
+                    dx = diffX / dist;
+                    dy = diffY / dist;
+                } else {
+                    player.targetX = null;
+                    player.targetY = null;
+                }
+            }
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            const nextX = player.x + dx * player.speed;
+            const nextY = player.y + dy * player.speed;
+
+            let moved = false;
+            if (dx !== 0 && isPointInWalkableArea(nextX, player.y)) {
+                player.x = nextX;
+                moved = true;
+            }
+            if (dy !== 0 && isPointInWalkableArea(player.x, nextY)) {
+                player.y = nextY;
+                moved = true;
+            }
+
+            player.isMoving = moved;
+            if (player.isMoving) {
+                player.animTimer++;
+                if (player.animTimer % 12 === 0) playSound('step');
+            }
+
+            checkProximity();
+        }
+
+        let activeZone = null;
+
+        function checkProximity() {
+            let found = null;
+            for (let z of zones) {
+                if (!z.isCorridor && player.x >= z.x && player.x <= z.x + z.w && player.y >= z.y && player.y <= z.y + z.h) {
+                    found = z;
+                    break;
+                }
+            }
+            activeZone = found;
+
+            const promptEl = document.getElementById('interactionPrompt');
+            const promptText = document.getElementById('promptText');
+
+            if (activeZone) {
+                promptText.innerText = `${activeZone.name}`;
+                promptEl.classList.remove('hidden');
+            } else {
+                promptEl.classList.add('hidden');
+            }
+        }
+
+        function triggerInteraction() {
+            if (!activeZone) return;
+
+            playSound('interact');
+
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.innerText = activeZone.name;
+            modalIcon.className = 'text-base text-orange-400';
+
+            let content = '';
+
+            if (activeZone.id === 'compras') {
+                modalIcon.innerHTML = '<i class="fa-solid fa-cart-shopping"></i>';
+                content = `
+                    <p class="font-semibold text-white">Departamento de Compras</p>
+                    <p>Área encargada de proveedores, facturación y suministros.</p>
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 font-mono text-[11px] text-orange-300">
+                        • Solicitudes pendientes: 4<br>
+                        • Presupuesto mensual: Aprobado<br>
+                        • Contacto: compras@empresa.com
+                    </div>
+                `;
+            } else if (activeZone.id === 'compliance') {
+                modalIcon.innerHTML = '<i class="fa-solid fa-clipboard-check"></i>';
+                content = `
+                    <p class="font-semibold text-white">Procesos y Compliance</p>
+                    <p>Gestión de auditorías, normativa interna y optimización de procesos.</p>
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-700 font-mono text-[11px] text-emerald-300">
+                        • Estado del sistema: 100% Reglamentario<br>
+                        • Próxima auditoría: Noviembre 2026
+                    </div>
+                `;
+            } else if (activeZone.id === 'cafe') {
+                modalIcon.innerHTML = '<i class="fa-solid fa-mug-hot"></i>';
+                content = `
+                    <p class="font-semibold text-white">Zona de Cafetería</p>
+                    <p>Espacio libre de descanso y chat informal de voz/texto.</p>
+                    <div class="bg-amber-900/30 border border-amber-600/40 p-3 rounded-lg text-amber-200">
+                        ☕ Serviste un café virtual. ¡Energía +100%!
+                    </div>
+                `;
+            } else if (activeZone.id === 'reunion') {
+                modalIcon.innerHTML = '<i class="fa-solid fa-users"></i>';
+                content = `
+                    <p class="font-semibold text-white">Salas de Reuniones</p>
+                    <p>Espacio preparado para presentaciones y trabajo colaborativo.</p>
+                    <button class="w-full py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg transition">
+                        Iniciar Sesión de Video
+                    </button>
+                `;
+            } else {
+                modalIcon.innerHTML = '<i class="fa-solid fa-laptop-code"></i>';
+                content = `
+                    <p class="font-semibold text-white">${activeZone.name}</p>
+                    <p>Estación de trabajo equipada con monitores dobles y conexión de alta velocidad.</p>
+                `;
+            }
+
+            modalBody.innerHTML = content;
+            modalOverlay.classList.remove('hidden');
+        }
+
+        function drawMap() {
+            // Dark gray background canvas
+            ctx.fillStyle = '#2b2d2f';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Draw all layout zones
+            for (let z of zones) {
+                ctx.fillStyle = z.color;
+                ctx.fillRect(z.x, z.y, z.w, z.h);
+
+                // Wood desk specifics
+                if (z.type === 'wood') {
+                    ctx.fillStyle = '#b87c3b';
+                    // Draw desks
+                    ctx.fillRect(z.x + 10, z.y + 15, 30, 40);
+                    ctx.fillRect(z.x + 45, z.y + 15, 30, 40);
+                    ctx.fillRect(z.x + 10, z.y + 65, 30, 40);
+                    ctx.fillRect(z.x + 45, z.y + 65, 30, 40);
+                    ctx.fillRect(z.x + 10, z.y + 115, 30, 35);
+                    ctx.fillRect(z.x + 45, z.y + 115, 30, 35);
+                }
+
+                // White desks inside bays
+                if (z.id.startsWith('bay') || z.id === 'compras' || z.id === 'compliance') {
+                    ctx.fillStyle = '#ffffff';
+                    const deskW = 12;
+                    const gap = (z.w - 2 * deskW) / 3;
+                    
+                    // Draw vertical desk strips
+                    for (let step = 20; step < z.h - 20; step += 30) {
+                        ctx.fillRect(z.x + gap, z.y + step, deskW, 20);
+                        ctx.fillRect(z.x + z.w - gap - deskW, z.y + step, deskW, 20);
+                    }
+
+                    // Vertical center dividing wall line
+                    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(z.x + z.w / 2, z.y + 10);
+                    ctx.lineTo(z.x + z.w / 2, z.y + z.h - 10);
+                    ctx.stroke();
+                }
+
+                // Coffee icon
+                if (z.id === 'cafe') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.font = '28px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('☕', z.x + z.w / 2, z.y + z.h / 2 + 10);
+                }
+
+                // Orange Meeting Tables
+                if (z.id === 'reunion') {
+                    ctx.fillStyle = '#d97706';
+                    ctx.beginPath();
+                    ctx.arc(z.x + 25, z.y + 30, 12, 0, Math.PI * 2);
+                    ctx.arc(z.x + 55, z.y + 50, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Green Lounge stairs / furniture
+                if (z.id.startsWith('lounge')) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(z.x + 15, z.y + 15, z.w - 30, 6);
+                    ctx.fillRect(z.x + 15, z.y + 30, z.w - 30, 6);
+                    ctx.fillRect(z.x + 15, z.y + 45, z.w - 30, 6);
+                }
+
+                // Vertical Text Labels (COMPRAS & PROCESOS Y COMPLIANCE)
+                if (z.vText && z.label) {
+                    ctx.save();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.translate(z.x + z.w / 2 + 3, z.y + z.h / 2);
+                    ctx.rotate(-Math.PI / 2);
+                    ctx.fillText(z.label, 0, 0);
+                    ctx.restore();
+                }
+            }
+
+            // Draw Corridor Plants
+            for (let p of corridorPlants) {
+                // Pot
+                ctx.fillStyle = '#854d0e';
+                ctx.fillRect(p.x, p.y + 8, 16, 10);
+                // Plant Leaves
+                ctx.fillStyle = '#22c55e';
+                ctx.beginPath();
+                ctx.arc(p.x + 8, p.y + 6, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawPlayer() {
+            const px = player.x;
+            const py = player.y;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(px, py + 8, 10, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Avatar Body
+            ctx.fillStyle = '#ea580c'; // Orange shirt
+            ctx.beginPath();
+            ctx.arc(px, py, 9, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.arc(px, py - 3, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Name Tag Bubble
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.beginPath();
+            ctx.roundRect(px - 30, py - 28, 60, 15, 6);
+            ctx.fill();
+            ctx.strokeStyle = '#f97316';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.arc(px - 22, py - 20, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 8px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Usuario', px + 3, py - 17);
+        }
+
+        function teleportTo(key) {
+            playSound('teleport');
+            if (key === 'cafe') { player.x = 105; player.y = 370; }
+            else if (key === 'compras') { player.x = 535; player.y = 200; }
+            else if (key === 'compliance') { player.x = 620; player.y = 200; }
+            else if (key === 'jardin') { player.x = 750; player.y = 180; }
+            else if (key === 'reunion') { player.x = 770; player.y = 365; }
+            else if (key === 'lounge') { player.x = 770; player.y = 450; }
+
+            player.targetX = null;
+            player.targetY = null;
+        }
+
+        function gameLoop() {
+            updatePlayer();
+            drawMap();
+            drawPlayer();
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.getElementById('modalCloseBtn').onclick = () => document.getElementById('modalOverlay').classList.add('hidden');
+        document.getElementById('modalActionBtn').onclick = () => document.getElementById('modalOverlay').classList.add('hidden');
+        document.getElementById('btnHelp').onclick = () => document.getElementById('helpModal').classList.remove('hidden');
+
+        document.getElementById('soundToggle').onclick = () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundText').innerText = soundEnabled ? 'Audio: ON' : 'Audio: OFF';
+            document.getElementById('soundIcon').className = soundEnabled ? 'fa-solid fa-volume-high text-orange-400' : 'fa-solid fa-volume-xmark text-slate-400';
+        };
+
+        window.onload = () => {
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
